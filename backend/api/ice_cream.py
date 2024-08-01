@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from database import get_db
 from schemas.ice_cream import IceCream
+from models import IceCream as IceCreamModel
 from sqlalchemy.orm import Session
 
 
@@ -16,11 +17,14 @@ def get_ice_creams(
     limit: int = Query(10, description="한 번에 조회할 아이스크림의 개수"),
     skip: int = Query(0, description="건너뛸 아이스크림의 개수"),
 ):
-    ice_creams = db.query(IceCream)\
-        .filter([IceCream.category == category, IceCream.name.contains(keyword)])\
-        .limit(limit).offset(skip).all()
+    q = db.query(IceCreamModel)
+    if category:
+        q = q.filter(IceCreamModel.category == category)
+    if keyword:
+        q = q.filter(IceCreamModel.name.contains(keyword))
+    ice_creams = q.limit(limit).offset(skip).all()
 
-    return ice_creams    
+    return ice_creams
 
 @router.get("/ice-creams/{ice_cream_id}", description="""
             특정 아이스크림을 조회합니다.
@@ -29,7 +33,7 @@ def get_ice_cream(
     db: Session = Depends(get_db),
     ice_cream_id: int = Path(..., description="조회할 아이스크림의 ID"),
 ):
-    ice_cream = db.query(IceCream).get(ice_cream_id)
+    ice_cream = db.query(IceCreamModel).get(ice_cream_id)
     if ice_cream is None:
         raise HTTPException(status_code=404, detail="아이스크림을 찾을 수 없습니다.")
     
