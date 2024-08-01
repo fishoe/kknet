@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body, Header
 from database import get_db
 from schemas.review import Deal, DealCreate
 from sqlalchemy.orm import Session
@@ -11,22 +11,22 @@ router = APIRouter()
 @router.get("/deals", response_model=list[Deal], description="""
     아이스크림의 제보 목록을 조회합니다.
 """)
-def get_reviews(
+def get_deals(
     db: Session = Depends(get_db),
     ice_cream_id: int = Query(..., description="아이스크림의 ID"),
     limit: int = Query(10, description="한 번에 조회할 제보의 개수"),
     skip: int = Query(0, description="건너뛸 제보의 개수"),
 ):
-    reviews = db.query(DealModel)\
+    deals = db.query(DealModel)\
         .filter(DealModel.ice_cream_id == ice_cream_id)\
         .limit(limit).offset(skip).all()
 
-    return reviews
+    return deals
 
 @router.post("/deals", response_model=Deal, description="""
     아이스크림에 리뷰를 작성합니다.
 """)
-def create_review(
+def create_deal(
     db: Session = Depends(get_db),
     deal: DealCreate = Body(),
 ):
@@ -46,13 +46,16 @@ def create_review(
 @router.delete("/deals/{deal_id}", description="""
     제보를 삭제합니다.
 """, response_model=Deal)
-def delete_review(
+def delete_deal(
     db: Session = Depends(get_db),
     deal_id: int = Path(..., description="삭제할 제보의 ID"),
+    password: str = Header(..., description="제보 비밀번호"),
 ):
-    review = db.query(DealModel).get(deal_id)
-    if review is None:
+    deal = db.query(DealModel).get(deal_id)
+    if deal is None:
         raise HTTPException(status_code=404, detail="리뷰를 찾을 수 없습니다.")
-    db.delete(review)
+    if deal.password != hash_password(password):
+        raise HTTPException(status_code=403, detail="비밀번호가 일치하지 않습니다.")
+    db.delete(deal)
     db.commit()
-    return review
+    return deal

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body, Header
 from database import get_db
 from schemas.review import Review, ReviewCreate
 from sqlalchemy.orm import Session
@@ -49,10 +49,13 @@ def create_review(
 def delete_review(
     db: Session = Depends(get_db),
     review_id: int = Path(..., description="삭제할 리뷰의 ID"),
+    password: str = Header(..., description="리뷰 비밀번호"),
 ):
     review = db.query(ReviewModel).get(review_id)
     if review is None:
         raise HTTPException(status_code=404, detail="리뷰를 찾을 수 없습니다.")
+    if review.password != hash_password(password):
+        raise HTTPException(status_code=403, detail="비밀번호가 일치하지 않습니다.")
     db.delete(review)
     db.commit()
     return review
