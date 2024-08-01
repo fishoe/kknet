@@ -4,6 +4,7 @@ from schemas.review import Review, ReviewCreate
 from sqlalchemy.orm import Session
 from util.password import hash_password
 from models import Review as ReviewModel
+from models import IceCream as IceCreamModel
 
 router = APIRouter()
 
@@ -29,6 +30,10 @@ def create_review(
     db: Session = Depends(get_db),
     review: ReviewCreate = Body(),
 ):
+    ice_cream = db.query(IceCreamModel).get(review.ice_cream_id)
+    if ice_cream is None:
+        raise HTTPException(status_code=404, detail="아이스크림을 찾을 수 없습니다.")
+
     review = ReviewModel(
         ice_cream_id=review.ice_cream_id,
         rating=review.rating,

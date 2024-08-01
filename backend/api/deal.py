@@ -4,6 +4,7 @@ from schemas.review import Deal, DealCreate
 from sqlalchemy.orm import Session
 from util.password import hash_password
 from models import Deal as DealModel
+from models import IceCream as IceCreamModel
 
 router = APIRouter()
 
@@ -27,27 +28,29 @@ def get_reviews(
 """)
 def create_review(
     db: Session = Depends(get_db),
-    review: DealCreate = Body(),
+    deal: DealCreate = Body(),
 ):
-    review = DealModel(
-        ice_cream_id=review.ice_cream_id,
-        rating=review.rating,
-        comment=review.comment,
-        password=hash_password(review.password)
+    ice_cream = db.query(IceCreamModel).get(deal.ice_cream_id)
+    if ice_cream is None:
+        raise HTTPException(status_code=404, detail="아이스크림을 찾을 수 없습니다.")
+    deal = DealModel(
+        ice_cream_id=deal.ice_cream_id,
+        comment=deal.comment,
+        password=hash_password(deal.password)
     )
-    db.add(review)
+    db.add(deal)
     db.commit()
-    db.refresh(review)
-    return review
+    db.refresh(deal)
+    return deal
 
-@router.delete("/deals/{deals_id}", description="""
+@router.delete("/deals/{deal_id}", description="""
     제보를 삭제합니다.
 """, response_model=Deal)
 def delete_review(
     db: Session = Depends(get_db),
-    deals_id: int = Path(..., description="삭제할 제보의 ID"),
+    deal_id: int = Path(..., description="삭제할 제보의 ID"),
 ):
-    review = db.query(DealModel).get(deals_id)
+    review = db.query(DealModel).get(deal_id)
     if review is None:
         raise HTTPException(status_code=404, detail="리뷰를 찾을 수 없습니다.")
     db.delete(review)
