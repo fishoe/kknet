@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TEXT
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Date, TEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -31,6 +31,6 @@ class Deal(Base):
     id = Column(Integer, primary_key=True)
     ice_cream_id = Column(Integer, ForeignKey('ice_creams.id'), nullable=False)
     comment = Column(String(255))
-    bought_at = Column(DateTime, nullable=True)
+    bought_at = Column(Date, nullable=True)
     password = Column(String(50), nullable=False)
     created_at = Column(DateTime, default=datetime.now)
